@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开放聊天板</title>
+    <style>
+        body { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            font-family: "Microsoft YaHei", sans-serif; 
+        }
+        /* 顶部管理员区域 */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        #adminMenu {
+            position: relative;
+            display: inline-block;
+        }
+        #adminBtn {
+            padding: 8px 16px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #adminDropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            min-width: 200px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #adminMenu:hover #adminDropdown {
+            display: block;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .btn-primary {
+            background: #4285f4;
+            color: white;
+        }
+        .btn-danger {
+            background: #ea4335;
+            color: white;
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* 留言列表 */
+        #messageList {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 400px;
+            margin-bottom: 20px;
+        }
+        .message {
+            position: relative;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .message.admin {
+            background: #e8f0fe;  /* 管理员留言底色 */
+            border-left: 3px solid #4285f4;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .message-content {
+            font-size: 1em;
+            line-height: 1.5;
+        }
+        .message-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .message-actions button {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        /* 留言编辑区 */
+        #editArea {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        #messageInput {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        #preview {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            min-height: 50px;
+        }
+
+        /* 提示信息 */
+        .status {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>开放聊天板</h1>
+        <div id="adminMenu">
+            <button id="adminBtn">账号</button>
+            <div id="adminDropdown">
+                <div id="loginSection">
+                    <div class="form-group">
+                        <label>管理员ID</label>
+                        <input type="text" id="adminId" placeholder="输入管理员ID">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="adminPwd" placeholder="输入密码">
+                    </div>
+                    <button class="btn btn-primary" onclick="adminLogin()">登录</button>
+                </div>
+                <div id="adminSection" style="display: none;">
+                    <p>当前登录：<span id="currentAdminId"></span></p>
+                    <p>权限：<span id="adminRole"></span></p>
+                    <button class="btn btn-secondary" onclick="showUpdateForm()">修改账号密码</button>
+                    <div id="updateForm" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <div class="form-group">
+                            <label>原管理员ID</label>
+                            <input type="text" id="oldAdminId" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>原密码</label>
+                            <input type="password" id="oldAdminPwd" placeholder="输入原密码">
+                        </div>
+                        <div class="form-group">
+                            <label>新管理员ID（可选）</label>
+                            <input type="text" id="newAdminId" placeholder="不修改则留空">
+                        </div>
+                        <div class="form-group">
+                            <label>新密码（可选）</label>
+                            <input type="password" id="newAdminPwd" placeholder="不修改则留空">
+                        </div>
+                        <button class="btn btn-primary" onclick="updateAdminInfo()">保存修改</button>
+                    </div>
+                    <div id="superAdminSection" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <div class="form-group">
+                            <label>创建新管理员ID</label>
+                            <input type="text" id="newAdminIdCreate" placeholder="输入新管理员ID">
+                        </div>
+                        <div class="form-group">
+                            <label>新管理员密码</label>
+                            <input type="password" id="newAdminPwdCreate" placeholder="输入新管理员密码">
+                        </div>
+                        <button class="btn btn-primary" onclick="createNewAdmin()">创建管理员</button>
+                    </div>
+                    <button class="btn btn-danger" style="margin-top: 10px;" onclick="adminLogout()">退出登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 留言编辑区 -->
+    <div id="editArea">
+        <div class="status">当前身份：<span id="currentIdentity">游客</span>（输入内容后可预览）</div>
+        <textarea id="messageInput" placeholder="请输入留言内容..."></textarea>
+        <div class="status">预览：</div>
+        <div id="preview"></div>
+        <button class="btn btn-primary" onclick="sendMessage()">确认发布</button>
+    </div>
+
+    <!-- 留言列表 -->
+    <div class="status">所有留言（实时同步）：</div>
+    <div id="messageList"></div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let token = localStorage.getItem('adminToken');  // 保存管理员令牌
+        let currentAdmin = {
+            id: null,
+            isSuper: false
+        };
+
+        // 页面加载时初始化
+        window.onload = function() {
+            // 监听输入框变化，实时预览
+            document.getElementById('messageInput').addEventListener('input', function() {
+                document.getElementById('preview').textContent = this.value;
+            });
+            // 检查是否已登录
+            if (token) {
+                loadAdminInfo();  // 加载管理员信息
+            }
+            loadMessages();  // 加载留言
+            setInterval(loadMessages, 10000);
